@@ -1,0 +1,3 @@
+﻿  prime2.cpp
+C:\Users\mikol\Desktop\Prow\OMP_project\prime2.cpp(39,39): warning C4244: "inicjowanie": konwersja z "double" do "unsigned int", możliwa utrata danych
+  OMP_project.vcxproj -> C:\Users\mikol\Desktop\Prow\OMP_project\Debug\OMP_project.exe
