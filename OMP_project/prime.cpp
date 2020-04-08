@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     
     std::cout << "Type start and end of numbers range: ";
     std::cin >> start >> end;
-    while (end < start || std::cin.fail()) {
+    while (end < start || std::cin.fail() || start < 2) {
         std::cout << "Incorrect data" << std::endl;
         std::cout << "Type start and end of numbers range: ";
         std::cin >> start >> end;
@@ -37,10 +37,15 @@ int main(int argc, char* argv[])
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
-    if (start % 2 == 0)
-        start ++;
-
     result = new int[round((end - start) / 2)];
+
+    if (start == 2) {
+        result[iter] = 2;
+        iter++;
+    }
+
+    if (start % 2 == 0)
+        start++;
 
 	startClock = omp_get_wtime();
 
@@ -50,7 +55,6 @@ int main(int argc, char* argv[])
             ++iter;
         }
     }
-
 	endClock = omp_get_wtime();
 
     std::cout << std::endl << "Result: ";
