@@ -58,19 +58,22 @@
 //        }
 //    }
 //
-//    for (int i = 0; i < iterNum; ++i) {
-//        for (int j = 0; j < iterPrime; ++j) {
-//            if (numbers[i] == primes[j]) {
-//                break;
-//            }
+//#pragma omp parallel
+//    {
+//#pragma omp for 
+//        for (int i = 0; i < iterNum; ++i) {
+//            for (int j = 0; j < iterPrime; ++j) {
+//                if (numbers[i] == primes[j]) {
+//                    break;
+//                }
 //
-//            if (numbers[i] % primes[j] == 0) {
-//                numbers[i] = 0;
-//                break;
+//                if (numbers[i] % primes[j] == 0) {
+//                    numbers[i] = 0;
+//                    break;
+//                }
 //            }
 //        }
 //    }
-//
 //	endClock = omp_get_wtime();
 //
 //    if (SHOW_RESULTS) {
