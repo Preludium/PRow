@@ -5,6 +5,7 @@
 //#include <iostream>
 //
 //#define NUM_THREADS 8
+//#define SHOW_RESULTS false
 //
 //bool isPrime(int num) {
 //    if (num % 2 == 0)
@@ -57,12 +58,14 @@
 //    }
 //	endClock = omp_get_wtime();
 //
-//    std::cout << std::endl << "Result: ";
-//    for (int i = 0; i < iter; ++i) {
-//        if(i < iter - 1)
-//            std::cout << result[i] << ", ";
-//        else
-//            std::cout << result[i] << std::endl;
+//    if(SHOW_RESULTS) {
+//        std::cout << std::endl << "Result: ";
+//        for (int i = 0; i < iter; ++i) {
+//            if(i < iter - 1)
+//                std::cout << result[i] << ", ";
+//            else
+//                std::cout << result[i] << std::endl;
+//        }
 //    }
 //
 //	printf("Czas przetwarzania wynosi %f sekund\n", (endClock - startClock));
