@@ -57,14 +57,21 @@ int main(int argc, char* argv[])
             ++iterPrime;
         }
     }
-    for (int j = 0; j < iterPrime; ++j) {
-        int currentlyChecked = primes[j] * 2;
+
+    for (int i = 0; i < iterPrime; ++i) {
+        int currentlyChecked = start;
+
+        while (currentlyChecked % primes[i] != 0)
+            ++currentlyChecked;
+        
+        if (currentlyChecked == primes[i])
+            currentlyChecked *= 2;
+
         while (currentlyChecked <= end) {
             numbers[currentlyChecked - start] = 0;
-            currentlyChecked += primes[j];
+            currentlyChecked += primes[i];
         }
     }
-    for (int i = 0; i < iterPrime; ++i) std::cout << primes[i] << std::endl;
 
 	endClock = omp_get_wtime();
 
@@ -74,12 +81,15 @@ int main(int argc, char* argv[])
     std::cout << std::endl << "Result: ";
     for (int i = 0; i < iterNum; ++i) {
         if (numbers[i] != 0) {
-            if (SHOW_RESULTS) std::cout << numbers[i] << ", ";
+            if (SHOW_RESULTS) 
+                std::cout << numbers[i] << ", ";
             numberOfPrimes++;
         }
     }
     std::cout << std::endl;
     std::cout << "Ilosc liczb: " << numberOfPrimes << std::endl;
 	printf("Czas przetwarzania wynosi %f sekund\n", (endClock - startClock));
+    delete[] numbers;
+    delete[] primes;
 	return 0;
 }

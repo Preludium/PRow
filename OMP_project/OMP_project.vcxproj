@@ -19,7 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="prime.cpp" />
     <ClCompile Include="prime2.cpp" />
+    <ClCompile Include="prime2_domain.cpp" />
+    <ClCompile Include="prime2_functional.cpp" />
+    <ClCompile Include="prime2_improved.cpp" />
+    <ClCompile Include="prime2_improved_domain.cpp" />
+    <ClCompile Include="prime2_improved_functional.cpp" />
+    <ClCompile Include="prime_parallel.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
