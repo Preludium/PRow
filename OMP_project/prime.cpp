@@ -61,13 +61,16 @@
 //    if(SHOW_RESULTS) {
 //        std::cout << std::endl << "Result: ";
 //        for (int i = 0; i < iter; ++i) {
-//            if(i < iter - 1)
-//                std::cout << result[i] << ", ";
-//            else
-//                std::cout << result[i] << std::endl;
+//            if (i % 10 == 0) {
+//                if (i < iter - 1)
+//                    std::cout << result[i] << ", ";
+//                else
+//                    std::cout << result[i] << std::endl;
+//            }
 //        }
 //    }
-//
+//    std::cout << std::endl;
+//    std::cout << "Ilosc liczb: " << iter << std::endl;
 //	printf("Czas przetwarzania wynosi %f sekund\n", (endClock - startClock));
 //    delete[] result;
 //	return 0;

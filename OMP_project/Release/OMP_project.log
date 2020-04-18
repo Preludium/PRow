@@ -1,8 +1,6 @@
-﻿  prime2_improved.cpp
-C:\Users\mikol\Desktop\Prow\OMP_project\prime2_improved.cpp(40,39): warning C4244: "inicjowanie": konwersja z "double" do "unsigned int", możliwa utrata danych
-  Trwa generowanie kodu
-  1 of 17 functions ( 5.9%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
-  Zakończono generowanie kodu
+﻿  prime2_improved_domain.cpp
+C:\Users\mikol\Desktop\Prow\OMP_project\prime2_improved_domain.cpp(41): warning #890: expression must have integral or enum type
+        primes = new int[round(sqrt(end)) - 2];
+                         ^
+  
   OMP_project.vcxproj -> C:\Users\mikol\Desktop\Prow\OMP_project\Release\OMP_project.exe

@@ -81,8 +81,11 @@ int main(int argc, char* argv[])
     std::cout << std::endl << "Result: ";
     for (int i = 0; i < iterNum; ++i) {
         if (numbers[i] != 0) {
-            if (SHOW_RESULTS) 
+            if (SHOW_RESULTS) {
+                if (i % 10 == 0)
+                    std::cout << std::endl;
                 std::cout << numbers[i] << ", ";
+            }
             numberOfPrimes++;
         }
     }
