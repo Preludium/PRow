@@ -99,6 +99,6 @@
 //   std::cout << "Ilosc liczb: " << numberOfPrimes << std::endl;
 //   printf("Czas przetwarzania wynosi %f sekund\n", (endClock - startClock));
 //	 delete[] numbers;
-//	 delte[] primes;
+//	 delete[] primes;
 //   return 0;
 //}
