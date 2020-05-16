@@ -1,0 +1,2 @@
+C:\Users\mikol\Desktop\Prow\CUDAnaKIJU\x64\Debug\CUDAnaKIJU.exe
+C:\Users\mikol\Desktop\Prow\CUDAnaKIJU\x64\Debug\CUDAnaKIJU.pdb
