@@ -24,19 +24,6 @@
  * in Proc. 2008 ACM/IEEE Conf. on Superconducting (SC '08),
  * Piscataway, NJ: IEEE Press, 2008, pp. Art. 31:1-11.
  */
-
-// System includes
- #define WIN32
-#include <stdio.h>
-#include <assert.h>
-
-// CUDA runtime
-#include <cuda_runtime.h>
-
-// Helper functions and utilities to work with CUDA
-#include <helper_functions.h>
-#include <helper_cuda.h>
-
 #include <Constants.h>
 
 /**
@@ -271,12 +258,7 @@ int main(int argc, char **argv)
 
     // By default, we use device 0, otherwise we override the device ID based on what is provided at the command line
     int devID = 0;
-
-    if (checkCmdLineFlag(argc, (const char **)argv, "device"))
-    {
-        devID = getCmdLineArgumentInt(argc, (const char **)argv, "device");
-        cudaSetDevice(devID);
-    }
+    setDeviceIfCmdArgument(argc, argv, "device", devID);
 
     cudaError_t error;
     cudaDeviceProp deviceProp;
@@ -289,11 +271,7 @@ int main(int argc, char **argv)
 
     error = cudaGetDeviceProperties(&deviceProp, devID);
 
-    if (deviceProp.computeMode == cudaComputeModeProhibited)
-    {
-        fprintf(stderr, "Error: device is running in <Compute Mode Prohibited>, no threads can use ::cudaSetDevice().\n");
-        exit(EXIT_SUCCESS);
-    }
+    checkComputeMode(deviceProp);
 
     if (error != cudaSuccess)
     {
@@ -305,41 +283,21 @@ int main(int argc, char **argv)
     }
 
     // Use a larger block size for Fermi and above
-    int block_size = (deviceProp.major < 2) ? 16 : 32;
-
-    dim3 dimsA(5*2*block_size, 5*2*block_size, 1);
-    dim3 dimsB(5*4*block_size, 5*2*block_size, 1);
+    int block_size = CONST_SIZE_OF_BLOCK;
+    int matrix_size = CONST_MATRIX_SIZE;
+    dim3 dimsA(matrix_size, matrix_size, 1);
+    dim3 dimsB(matrix_size, matrix_size, 1);
 
     // width of Matrix A
-    if (checkCmdLineFlag(argc, (const char **)argv, "wA"))
-    {
-        dimsA.x = getCmdLineArgumentInt(argc, (const char **)argv, "wA");
-    }
-
+    setDimIfCmdArgument(argc, argv, "wA", dimsA.x);
     // height of Matrix A
-    if (checkCmdLineFlag(argc, (const char **)argv, "hA"))
-    {
-        dimsA.y = getCmdLineArgumentInt(argc, (const char **)argv, "hA");
-    }
-
+    setDimIfCmdArgument(argc, argv, "hA", dimsA.y);
     // width of Matrix B
-    if (checkCmdLineFlag(argc, (const char **)argv, "wB"))
-    {
-        dimsB.x = getCmdLineArgumentInt(argc, (const char **)argv, "wB");
-    }
-
+    setDimIfCmdArgument(argc, argv, "wB", dimsB.x);
     // height of Matrix B
-    if (checkCmdLineFlag(argc, (const char **)argv, "hB"))
-    {
-        dimsB.y = getCmdLineArgumentInt(argc, (const char **)argv, "hB");
-    }
+    setDimIfCmdArgument(argc, argv, "hB", dimsB.y);
 
-    if (dimsA.x != dimsB.y)
-    {
-        printf("Error: outer matrix dimensions must be equal. (%d != %d)\n",
-               dimsA.x, dimsB.y);
-        exit(EXIT_FAILURE);
-    }
+    checkDimensions(dimsA, dimsB);
 
     printf("MatrixA(%d,%d), MatrixB(%d,%d)\n", dimsA.x, dimsA.y, dimsB.x, dimsB.y);
 
