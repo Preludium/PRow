@@ -37,6 +37,7 @@
 #include <helper_functions.h>
 #include <helper_cuda.h>
 
+#include <Constants.h>
 
 /**
  * Matrix multiplication (CUDA Kernel) on the device: C = A * B
@@ -118,13 +119,6 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
     C[c + wB * ty + tx] = Csub;
 }
 
-void constantInit(float *data, int size, float val)
-{
-    for (int i = 0; i < size; ++i)
-    {
-        data[i] = val;
-    }
-}
 
 /**
  * Run a simple test of matrix multiplication using CUDA
@@ -151,6 +145,7 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
     dim3 dimsC(dimsB.x, dimsA.y, 1);
     unsigned int mem_size_C = dimsC.x * dimsC.y * sizeof(float);
     float *h_C = (float *) malloc(mem_size_C);
+    
 
     if (h_C == NULL)
     {
@@ -161,45 +156,20 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
     cudaError_t error;
 
     error = cudaMalloc((void **) &d_A, mem_size_A);
-
-    if (error != cudaSuccess)
-    {
-        printf("cudaMalloc d_A returned error code %d, line(%d)\n", error, __LINE__);
-        exit(EXIT_FAILURE);
-    }
+    checkIfCudaError(error, "cudaMalloc d_A", __LINE__);
 
     error = cudaMalloc((void **) &d_B, mem_size_B);
-
-    if (error != cudaSuccess)
-    {
-        printf("cudaMalloc d_B returned error code %d, line(%d)\n", error, __LINE__);
-        exit(EXIT_FAILURE);
-    }
+    checkIfCudaError(error, "cudaMalloc d_B", __LINE__);
 
     error = cudaMalloc((void **) &d_C, mem_size_C);
-
-    if (error != cudaSuccess)
-    {
-        printf("cudaMalloc d_C returned error code %d, line(%d)\n", error, __LINE__);
-        exit(EXIT_FAILURE);
-    }
-
+    checkIfCudaError(error, "cudaMalloc d_C", __LINE__);
+   
     // copy host memory to device
     error = cudaMemcpy(d_A, h_A, mem_size_A, cudaMemcpyHostToDevice);
-
-    if (error != cudaSuccess)
-    {
-        printf("cudaMemcpy (d_A,h_A) returned error code %d, line(%d)\n", error, __LINE__);
-        exit(EXIT_FAILURE);
-    }
+    checkIfCudaError(error, "cudaMemcpy (d_A, h_A)", __LINE__);
 
     error = cudaMemcpy(d_B, h_B, mem_size_B, cudaMemcpyHostToDevice);
-
-    if (error != cudaSuccess)
-    {
-        printf("cudaMemcpy (d_B,h_B) returned error code %d, line(%d)\n", error, __LINE__);
-        exit(EXIT_FAILURE);
-    }
+    checkIfCudaError(error, "cudaMemcpy (d_B, h_B)", __LINE__);
 
     // Setup execution parameters
     dim3 threads(block_size, block_size);
@@ -225,30 +195,16 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
     // Allocate CUDA events that we'll use for timing
     cudaEvent_t start;
     error = cudaEventCreate(&start);
-
-    if (error != cudaSuccess)
-    {
-        fprintf(stderr, "Failed to create start event (error code %s)!\n", cudaGetErrorString(error));
-        exit(EXIT_FAILURE);
-    }
+    checkIfCudaErrorEvent(error, "cudaEventCreate(start)");
 
     cudaEvent_t stop;
     error = cudaEventCreate(&stop);
+    checkIfCudaErrorEvent(error, "cudaEventCreate(stop)");
 
-    if (error != cudaSuccess)
-    {
-        fprintf(stderr, "Failed to create stop event (error code %s)!\n", cudaGetErrorString(error));
-        exit(EXIT_FAILURE);
-    }
 
     // Record the start event
     error = cudaEventRecord(start, NULL);
-
-    if (error != cudaSuccess)
-    {
-        fprintf(stderr, "Failed to record start event (error code %s)!\n", cudaGetErrorString(error));
-        exit(EXIT_FAILURE);
-    }
+    checkIfCudaErrorEvent(error, "cudaEventRecord(start)");
 
     // Execute the kernel
     int nIter = 300;
@@ -267,62 +223,25 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
 
     // Record the stop event
     error = cudaEventRecord(stop, NULL);
-
-    if (error != cudaSuccess)
-    {
-        fprintf(stderr, "Failed to record stop event (error code %s)!\n", cudaGetErrorString(error));
-        exit(EXIT_FAILURE);
-    }
+    checkIfCudaErrorEvent(error, "cudaEventRecord(stop)");
 
     // Wait for the stop event to complete
     error = cudaEventSynchronize(stop);
-
-    if (error != cudaSuccess)
-    {
-        fprintf(stderr, "Failed to synchronize on the stop event (error code %s)!\n", cudaGetErrorString(error));
-        exit(EXIT_FAILURE);
-    }
+    checkIfCudaErrorEvent(error, "cudaEventSynchronize(stop)");
 
     float msecTotal = 0.0f;
     error = cudaEventElapsedTime(&msecTotal, start, stop);
-
-    if (error != cudaSuccess)
-    {
-        fprintf(stderr, "Failed to get time elapsed between events (error code %s)!\n", cudaGetErrorString(error));
-        exit(EXIT_FAILURE);
-    }
+    checkIfCudaErrorEvent(error, "cudaEventGetElapsedTime(start, stop)");
 
     // Compute and print the performance
-    float msecPerMatrixMul = msecTotal / nIter;
-    double flopsPerMatrixMul = 2.0 * (double)dimsA.x * (double)dimsA.y * (double)dimsB.x;
-    double gigaFlops = (flopsPerMatrixMul * 1.0e-9f) / (msecPerMatrixMul / 1000.0f);
-    printf(
-        "Performance= %.2f GFlop/s, Time= %.3f msec, Size= %.0f Ops, WorkgroupSize= %u threads/block\n",
-        gigaFlops,
-        msecPerMatrixMul,
-        flopsPerMatrixMul,
-        threads.x * threads.y);
+    computeAndPrintPerformance(msecTotal, nIter, dimsA, dimsB, threads);
 
     // Copy result from device to host
     error = cudaMemcpy(h_C, d_C, mem_size_C, cudaMemcpyDeviceToHost);
-
-    if (error != cudaSuccess)
-    {
-        printf("cudaMemcpy (h_C,d_C) returned error code %d, line(%d)\n", error, __LINE__);
-        exit(EXIT_FAILURE);
-    }
+    checkIfCudaError(error, "cudaMemcpy(h_C, d_C)", __LINE__);
 
     printf("Checking computed result for correctness: ");
-    bool correct = true;
-
-    for (int i = 0; i < (int)(dimsC.x * dimsC.y); i++)
-    {
-        if (fabs(h_C[i] - (dimsA.x * valB)) > 1e-5)
-        {
-            printf("Error! Matrix[%05d]=%.8f, ref=%.8f error term is > 1e-5\n", i, h_C[i], dimsA.x*valB);
-            correct = false;
-        }
-    }
+    bool correct = checkCorrectness(dimsA, dimsC, h_C, valB);
 
     printf("%s\n", correct ? "OK" : "FAIL");
 
@@ -337,15 +256,7 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
     printf("\nNote: For peak performance, please refer to the matrixMulCUBLAS example.\n");
 
     cudaDeviceReset();
-
-    if (correct)
-    {
-        return EXIT_SUCCESS;
-    }
-    else
-    {
-        return EXIT_FAILURE;
-    }
+    return correct ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 
@@ -356,16 +267,7 @@ int main(int argc, char **argv)
 {
     printf("[Matrix Multiply Using CUDA] - Starting...\n");
 
-    if (checkCmdLineFlag(argc, (const char **)argv, "help") ||
-        checkCmdLineFlag(argc, (const char **)argv, "?"))
-    {
-        printf("Usage -device=n (n >= 0 for deviceID)\n");
-        printf("      -wA=WidthA -hA=HeightA (Width x Height of Matrix A)\n");
-        printf("      -wB=WidthB -hB=HeightB (Width x Height of Matrix B)\n");
-        printf("  Note: Outer matrix dimensions of A & B matrices must be equal.\n");
-
-        exit(EXIT_SUCCESS);
-    }
+    printHelpMode(argc, argv);
 
     // By default, we use device 0, otherwise we override the device ID based on what is provided at the command line
     int devID = 0;
