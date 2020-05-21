@@ -60,43 +60,75 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
     // that is computed by the thread
     float Csub = 0;
 
-    // Loop over all the sub-matrices of A and B
-    // required to compute the block sub-matrix
-    for (int a = aBegin, b = bBegin;
+    // Pobranie pierwszego bloku danych z pamiêci do A
+    // tu bêdziemy zmieniaæ __shared__ na rejestry
+    __shared__ float AAs[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ float ABs[BLOCK_SIZE][BLOCK_SIZE];
+
+    AAs[ty][tx] = A[aBegin + wA * ty + tx];
+    ABs[ty][tx] = B[bBegin + wB * ty + tx];
+    /*
+    * Loop over all the sub-matrices of A and B
+    * required to compute the block sub-matrix
+    */
+
+    // (CHYBA!) trzeba zacz¹æ od kolejnego bloku, bo A wczeœniej ju¿ pobra³o sobie pierwszy??
+    for (int a = aBegin + aStep, b = bBegin + bStep;
          a <= aEnd;
          a += aStep, b += bStep)
     {
+        /*
+        * Declaration of the shared memory array As used to
+        * store the sub-matrix of A
+        */
+        __shared__ float BAs[BLOCK_SIZE][BLOCK_SIZE];
+        /*
+        * Declaration of the shared memory array Bs used to
+        * store the sub-matrix of B
+        */
+        __shared__ float BBs[BLOCK_SIZE][BLOCK_SIZE];
 
-        // Declaration of the shared memory array As used to
-        // store the sub-matrix of A
-        __shared__ float As[BLOCK_SIZE][BLOCK_SIZE];
+        // Przepisanie z A na wspó³dzielon¹ B
+        // CHYBA(!) to bêdziemy zamieniaæ z obliczeniami ale nwm
+        // -pytanie: czy w jakiœ spoœób musimy "zwalniaæ" A? (tak jest na wyk³adzie)
+        BAs[ty][tx] = AAs;
+        BBs[ty][tx] = BBs;
 
-        // Declaration of the shared memory array Bs used to
-        // store the sub-matrix of B
-        __shared__ float Bs[BLOCK_SIZE][BLOCK_SIZE];
+        /*
+        * Load the matrices from device memory
+        * to shared memory; each thread loads
+        * one element of each matrix
+        */
 
-        // Load the matrices from device memory
-        // to shared memory; each thread loads
-        // one element of each matrix
-        As[ty][tx] = A[a + wA * ty + tx];
-        Bs[ty][tx] = B[b + wB * ty + tx];
-
-        // Synchronize to make sure the matrices are loaded
+        /*
+        * Synchronize to make sure the matrices are loaded
+        */
         __syncthreads();
 
-        // Multiply the two matrices together;
-        // each thread computes one element
-        // of the block sub-matrix
+        // Pobranie kolejnego bloku danych z pamiêci globalnej do A
+        AAs[ty][tx] = A[a + wA * ty + tx];
+        ABs[ty][tx] = B[b + wB * ty + tx];
+
+        /*
+        * Multiply the two matrices together;
+        * each thread computes one element
+        * of the block sub-matrix
+        */
 #pragma unroll
 
         for (int k = 0; k < BLOCK_SIZE; ++k)
         {
-            Csub += As[ty][k] * Bs[k][tx];
+            // Obliczenia, ale tym razem na B
+            Csub += BAs[ty][k] * BBs[k][tx];
         }
 
-        // Synchronize to make sure that the preceding
-        // computation is done before loading two new
-        // sub-matrices of A and B in the next iteration
+        /*
+        * Synchronize to make sure that the preceding
+        * computation is done before loading two new
+        * sub-matrices of A and B in the next iteration
+        */
+
+        //pytanie: to samo co wczeœniej, na wyk³¹dzie jest zwolnienie B, trzeba to robiæ czy siê samo robi?
         __syncthreads();
     }
 
@@ -195,6 +227,8 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
 
     // Execute the kernel
     int nIter = 300;
+
+
 
     for (int j = 0; j < nIter; j++)
     {
