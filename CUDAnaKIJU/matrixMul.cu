@@ -91,8 +91,8 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
         // Przepisanie z A na wspó³dzielon¹ B
         // CHYBA(!) to bêdziemy zamieniaæ z obliczeniami ale nwm
         // -pytanie: czy w jakiœ spoœób musimy "zwalniaæ" A? (tak jest na wyk³adzie)
-        BAs[ty][tx] = AAs;
-        BBs[ty][tx] = BBs;
+        BAs[ty][tx] = AAs[ty][tx];
+        BBs[ty][tx] = BBs[ty][tx];
 
         /*
         * Load the matrices from device memory
