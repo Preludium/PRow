@@ -95,6 +95,9 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
         BBs[ty][tx] = ABs[ty][tx];
 
         //printf("ABS: %f BBS: %f\n", ABs[ty][tx], BBs[ty][tx]);
+        
+        __shared__ float AAs[BLOCK_SIZE][BLOCK_SIZE];
+        __shared__ float ABs[BLOCK_SIZE][BLOCK_SIZE];
 
         /*
         * Load the matrices from device memory
