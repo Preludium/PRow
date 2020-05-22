@@ -108,7 +108,7 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
         __syncthreads();
 
         // Pobranie kolejnego bloku danych z pamiêci globalnej do A
-        if (a != aBegin) {
+        if (a != aEnd) {
             AAs[ty][tx] = A[a + aStep + wA * ty + tx];
             ABs[ty][tx] = B[b + bStep + wB * ty + tx];
         }
