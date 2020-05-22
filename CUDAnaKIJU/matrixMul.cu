@@ -73,7 +73,7 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
     */
 
     // (CHYBA!) trzeba zacz¹æ od kolejnego bloku, bo A wczeœniej ju¿ pobra³o sobie pierwszy??
-    for (int a = aBegin + aStep, b = bBegin + bStep;
+    for (int a = aBegin, b = bBegin;
          a <= aEnd;
          a += aStep, b += bStep)
     {
@@ -92,7 +92,9 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
         // CHYBA(!) to bêdziemy zamieniaæ z obliczeniami ale nwm
         // -pytanie: czy w jakiœ spoœób musimy "zwalniaæ" A? (tak jest na wyk³adzie)
         BAs[ty][tx] = AAs[ty][tx];
-        BBs[ty][tx] = BBs[ty][tx];
+        BBs[ty][tx] = ABs[ty][tx];
+
+        //printf("ABS: %f BBS: %f\n", ABs[ty][tx], BBs[ty][tx]);
 
         /*
         * Load the matrices from device memory
@@ -106,9 +108,10 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
         __syncthreads();
 
         // Pobranie kolejnego bloku danych z pamiêci globalnej do A
-        AAs[ty][tx] = A[a + wA * ty + tx];
-        ABs[ty][tx] = B[b + wB * ty + tx];
-
+        if (a != aBegin) {
+            AAs[ty][tx] = A[a + aStep + wA * ty + tx];
+            ABs[ty][tx] = B[b + bStep + wB * ty + tx];
+        }
         /*
         * Multiply the two matrices together;
         * each thread computes one element
