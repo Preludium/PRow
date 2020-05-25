@@ -62,11 +62,11 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
 
     // Pobranie pierwszego bloku danych z pamiêci do A
     // tu bêdziemy zmieniaæ __shared__ na rejestry
-    __shared__ float AAs[BLOCK_SIZE][BLOCK_SIZE];
-    __shared__ float ABs[BLOCK_SIZE][BLOCK_SIZE];
+    float AAs;
+    float ABs;
 
-    AAs[ty][tx] = A[aBegin + wA * ty + tx];
-    ABs[ty][tx] = B[bBegin + wB * ty + tx];
+    AAs = A[aBegin + wA * ty + tx];
+    ABs = B[bBegin + wB * ty + tx];
     /*
     * Loop over all the sub-matrices of A and B
     * required to compute the block sub-matrix
@@ -91,13 +91,13 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
         // Przepisanie z A na wspó³dzielon¹ B
         // CHYBA(!) to bêdziemy zamieniaæ z obliczeniami ale nwm
         // -pytanie: czy w jakiœ spoœób musimy "zwalniaæ" A? (tak jest na wyk³adzie)
-        BAs[ty][tx] = AAs[ty][tx];
-        BBs[ty][tx] = ABs[ty][tx];
+        BAs[ty][tx] = AAs;
+        BBs[ty][tx] = ABs;
 
         //printf("ABS: %f BBS: %f\n", ABs[ty][tx], BBs[ty][tx]);
         
-        __shared__ float AAs[BLOCK_SIZE][BLOCK_SIZE];
-        __shared__ float ABs[BLOCK_SIZE][BLOCK_SIZE];
+        float AAs;
+        float ABs;
 
         /*
         * Load the matrices from device memory
@@ -112,8 +112,8 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
 
         // Pobranie kolejnego bloku danych z pamiêci globalnej do A
         if (a != aEnd) {
-            AAs[ty][tx] = A[a + aStep + wA * ty + tx];
-            ABs[ty][tx] = B[b + bStep + wB * ty + tx];
+            AAs = A[a + aStep + wA * ty + tx];
+            ABs = B[b + bStep + wB * ty + tx];
         }
         /*
         * Multiply the two matrices together;
@@ -232,7 +232,7 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
     checkIfCudaErrorEvent(error, "cudaEventRecord(start)");
 
     // Execute the kernel
-    int nIter = 300;
+    int nIter = 1;
 
 
 
