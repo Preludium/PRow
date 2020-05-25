@@ -26,6 +26,9 @@
  */
 #include <Constants.h>
 
+#define CONST_SIZE_OF_BLOCK 8
+#define CONST_MATRIX_SIZE 1024
+
 /**
  * Matrix multiplication (CUDA Kernel) on the device: C = A * B
  * wA is A's width and wB is B's width
@@ -208,9 +211,13 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
     {
         matrixMulCUDA<16><<< grid, threads >>>(d_C, d_A, d_B, dimsA.x, dimsB.x);
     }
-    else
+    else if (block_size == 32)
     {
         matrixMulCUDA<32><<< grid, threads >>>(d_C, d_A, d_B, dimsA.x, dimsB.x);
+    }
+    else
+    {
+        matrixMulCUDA<8> <<< grid, threads >>> (d_C, d_A, d_B, dimsA.x, dimsB.x);
     }
 
     printf("done\n");
@@ -242,9 +249,13 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
         {
             matrixMulCUDA<16><<< grid, threads >>>(d_C, d_A, d_B, dimsA.x, dimsB.x);
         }
-        else
+        else if (block_size == 32)
         {
             matrixMulCUDA<32><<< grid, threads >>>(d_C, d_A, d_B, dimsA.x, dimsB.x);
+        }
+        else
+        {
+            matrixMulCUDA<8> <<< grid, threads >>> (d_C, d_A, d_B, dimsA.x, dimsB.x);
         }
     }
 
@@ -340,6 +351,7 @@ int main(int argc, char **argv)
     checkDimensions(dimsA, dimsB);
 
     printf("MatrixA(%d,%d), MatrixB(%d,%d)\n", dimsA.x, dimsA.y, dimsB.x, dimsB.y);
+    printf("Block size: %d\n", block_size);
 
     int matrix_result = matrixMultiply(argc, argv, block_size, dimsA, dimsB);
 
