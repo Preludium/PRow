@@ -26,6 +26,10 @@
  */
 #include <Constants.h>
 
+#define CONST_MATRIX_SIZE 1024;
+#define CONST_SIZE_OF_BLOCK 8;
+#define N_ITER 300
+
 /**
  * Matrix multiplication (CUDA Kernel) on the device: C = A * B
  * wA is A's width and wB is B's width
@@ -232,7 +236,7 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
     checkIfCudaErrorEvent(error, "cudaEventRecord(start)");
 
     // Execute the kernel
-    int nIter = 1;
+    int nIter = N_ITER;
 
 
 
@@ -340,6 +344,7 @@ int main(int argc, char **argv)
     checkDimensions(dimsA, dimsB);
 
     printf("MatrixA(%d,%d), MatrixB(%d,%d)\n", dimsA.x, dimsA.y, dimsB.x, dimsB.y);
+    printf("Block size: %d\n", block_size);
 
     int matrix_result = matrixMultiply(argc, argv, block_size, dimsA, dimsB);
 
