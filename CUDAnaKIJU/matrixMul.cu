@@ -26,7 +26,7 @@
  */
 #include <Constants.h>
 
-#define CONST_MATRIX_SIZE 1024;
+#define CONST_MATRIX_SIZE 3072;
 #define CONST_SIZE_OF_BLOCK 8;
 #define N_ITER 300
 
@@ -114,11 +114,6 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
         */
         __syncthreads();
 
-        // Pobranie kolejnego bloku danych z pamiêci globalnej do A
-        if (a != aEnd) {
-            AAs = A[a + aStep + wA * ty + tx];
-            ABs = B[b + bStep + wB * ty + tx];
-        }
         /*
         * Multiply the two matrices together;
         * each thread computes one element
@@ -130,6 +125,12 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
         {
             // Obliczenia, ale tym razem na B
             Csub += BAs[ty][k] * BBs[k][tx];
+        }
+
+        // Pobranie kolejnego bloku danych z pamiêci globalnej do A
+        if (a != aEnd) {
+            AAs = A[a + aStep + wA * ty + tx];
+            ABs = B[b + bStep + wB * ty + tx];
         }
 
         /*
@@ -212,9 +213,13 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
     {
         matrixMulCUDA<16><<< grid, threads >>>(d_C, d_A, d_B, dimsA.x, dimsB.x);
     }
-    else
+    else if (block_size == 32)
     {
         matrixMulCUDA<32><<< grid, threads >>>(d_C, d_A, d_B, dimsA.x, dimsB.x);
+    }
+    else
+    {
+        matrixMulCUDA<8> <<< grid, threads >>> (d_C, d_A, d_B, dimsA.x, dimsB.x);
     }
 
     printf("done\n");
@@ -246,9 +251,13 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
         {
             matrixMulCUDA<16><<< grid, threads >>>(d_C, d_A, d_B, dimsA.x, dimsB.x);
         }
-        else
+        else if (block_size == 32)
         {
             matrixMulCUDA<32><<< grid, threads >>>(d_C, d_A, d_B, dimsA.x, dimsB.x);
+        }
+        else
+        {
+            matrixMulCUDA<8> <<< grid, threads >>> (d_C, d_A, d_B, dimsA.x, dimsB.x);
         }
     }
 
