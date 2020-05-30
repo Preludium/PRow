@@ -66,11 +66,14 @@ matrixMulCUDA(float* C, float* A, float* B, int wA, int wB)
 
     // Pobranie pierwszego bloku danych z pamiêci do A
     // tu bêdziemy zmieniaæ __shared__ na rejestry
-    float(*AAs)[BLOCK_SIZE];
-    AAs = (float (*)[BLOCK_SIZE])&(A[aBegin + wA * ty + tx]);
-    
-    float(*ABs)[BLOCK_SIZE];
-    ABs = (float(*)[BLOCK_SIZE]) &(B[bBegin + wB * ty + tx]);
+    __shared__ float AAs[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ float ABs[BLOCK_SIZE][BLOCK_SIZE];
+
+    AAs[ty][tx] = A[aBegin + wA * ty + tx];
+    ABs[ty][tx] = B[bBegin + wB * ty + tx];
+
+    //AAs = (float(*)[BLOCK_SIZE]) &(A[aBegin + wA * ty + tx]);
+    //ABs = (float(*)[BLOCK_SIZE]) &(B[bBegin + wB * ty + tx]);
 
     //AAs = &A[aBegin + wA * ty + tx];
     //float (*ABs)[BLOCK_SIZE];
@@ -91,23 +94,24 @@ matrixMulCUDA(float* C, float* A, float* B, int wA, int wB)
         * Declaration of the shared memory array As used to
         * store the sub-matrix of A
         */
-        __shared__ float BAs[BLOCK_SIZE][BLOCK_SIZE];
+        float (*BAs)[BLOCK_SIZE];
         /*
         * Declaration of the shared memory array Bs used to
         * store the sub-matrix of B
         */
-        __shared__ float BBs[BLOCK_SIZE][BLOCK_SIZE];
+        float (*BBs)[BLOCK_SIZE];
 
         // Przepisanie z A na wspó³dzielon¹ B
         // CHYBA(!) to bêdziemy zamieniaæ z obliczeniami ale nwm
         // -pytanie: czy w jakiœ spoœób musimy "zwalniaæ" A? (tak jest na wyk³adzie)
-        BAs[ty][tx] = AAs[ty][tx];
-        BBs[ty][tx] = ABs[ty][tx];
+        BAs = (float(*)[BLOCK_SIZE])&AAs[ty][tx];
+        BBs = (float(*)[BLOCK_SIZE])&ABs[ty][tx];
 
         //printf("ABS: %f BBS: %f\n", ABs[ty][tx], BBs[ty][tx]);
 
-        float(*AAs)[BLOCK_SIZE];
-        float(*ABs)[BLOCK_SIZE];
+        __shared__ float AAs[BLOCK_SIZE][BLOCK_SIZE];
+        __shared__ float ABs[BLOCK_SIZE][BLOCK_SIZE];
+
 
         /*
         * Load the matrices from device memory
@@ -122,8 +126,10 @@ matrixMulCUDA(float* C, float* A, float* B, int wA, int wB)
 
         // Pobranie kolejnego bloku danych z pamiêci globalnej do A
         if (a != aEnd) {
-            AAs = (float(*)[BLOCK_SIZE]) & (A[aBegin + aStep + wA * ty + tx]);
-            ABs = (float(*)[BLOCK_SIZE]) & (B[bBegin + bStep + wB * ty + tx]);
+            AAs[ty][tx] = A[aBegin + wA * ty + tx];
+            ABs[ty][tx] = B[bBegin + wB * ty + tx];
+            //AAs = (float(*)[BLOCK_SIZE]) &(A[aBegin + aStep + wA * ty + tx]);
+            //ABs = (float(*)[BLOCK_SIZE]) &(B[bBegin + bStep + wB * ty + tx]);
             //AAs[ty][tx] = A[a + aStep + wA * ty + tx];
             //ABs[ty][tx] = B[b + bStep + wB * ty + tx];
         }
@@ -137,7 +143,7 @@ matrixMulCUDA(float* C, float* A, float* B, int wA, int wB)
         for (int k = 0; k < BLOCK_SIZE; ++k)
         {
             // Obliczenia, ale tym razem na B
-            Csub += BAs[ty][k] * BBs[k][tx];
+            Csub += (*BAs)[k] * (*BBs)[k];
         }
 
         /*
