@@ -34,8 +34,9 @@
  * wA is A's width and wB is B's width
  */
 template <int BLOCK_SIZE> __global__ void
-matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
+matrixMulCUDA(float* C, float* A, float* B, int wA, int wB)
 {
+
     // Block index
     int bx = blockIdx.x;
     int by = blockIdx.y;
@@ -48,16 +49,16 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
     int aBegin = wA * BLOCK_SIZE * by;
 
     // Index of the last sub-matrix of A processed by the block
-    int aEnd   = aBegin + wA - 1;
+    int aEnd = aBegin + wA - 1;
 
     // Step size used to iterate through the sub-matrices of A
-    int aStep  = BLOCK_SIZE;
+    int aStep = BLOCK_SIZE;
 
     // Index of the first sub-matrix of B processed by the block
     int bBegin = BLOCK_SIZE * bx;
 
     // Step size used to iterate through the sub-matrices of B
-    int bStep  = BLOCK_SIZE * wB;
+    int bStep = BLOCK_SIZE * wB;
 
     // Csub is used to store the element of the block sub-matrix
     // that is computed by the thread
@@ -65,16 +66,22 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
 
     // Pobranie pierwszego bloku danych z pamiêci do A
     // tu bêdziemy zmieniaæ __shared__ na rejestry
-    __shared__ float AAs[BLOCK_SIZE][BLOCK_SIZE];
-    __shared__ float ABs[BLOCK_SIZE][BLOCK_SIZE];
+    float(*AAs)[BLOCK_SIZE];
+    AAs = (float (*)[BLOCK_SIZE])&(A[aBegin + wA * ty + tx]);
+    
+    float(*ABs)[BLOCK_SIZE];
+    ABs = (float(*)[BLOCK_SIZE]) &(B[bBegin + wB * ty + tx]);
 
-    AAs[ty][tx] = A[aBegin + wA * ty + tx];
-    ABs[ty][tx] = B[bBegin + wB * ty + tx];
+    //AAs = &A[aBegin + wA * ty + tx];
+    //float (*ABs)[BLOCK_SIZE];
+
+
+    //(*AAs)[ty] = ;
+    //(*ABs)[ty] = B[bBegin + wB * ty + tx];
     /*
     * Loop over all the sub-matrices of A and B
     * required to compute the block sub-matrix
     */
-
     // (CHYBA!) trzeba zacz¹æ od kolejnego bloku, bo A wczeœniej ju¿ pobra³o sobie pierwszy??
     for (int a = aBegin, b = bBegin;
          a <= aEnd;
@@ -98,9 +105,9 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
         BBs[ty][tx] = ABs[ty][tx];
 
         //printf("ABS: %f BBS: %f\n", ABs[ty][tx], BBs[ty][tx]);
-        
-        __shared__ float AAs[BLOCK_SIZE][BLOCK_SIZE];
-        __shared__ float ABs[BLOCK_SIZE][BLOCK_SIZE];
+
+        float(*AAs)[BLOCK_SIZE];
+        float(*ABs)[BLOCK_SIZE];
 
         /*
         * Load the matrices from device memory
@@ -115,8 +122,10 @@ matrixMulCUDA(float *C, float *A, float *B, int wA, int wB)
 
         // Pobranie kolejnego bloku danych z pamiêci globalnej do A
         if (a != aEnd) {
-            AAs[ty][tx] = A[a + aStep + wA * ty + tx];
-            ABs[ty][tx] = B[b + bStep + wB * ty + tx];
+            AAs = (float(*)[BLOCK_SIZE]) & (A[aBegin + aStep + wA * ty + tx]);
+            ABs = (float(*)[BLOCK_SIZE]) & (B[bBegin + bStep + wB * ty + tx]);
+            //AAs[ty][tx] = A[a + aStep + wA * ty + tx];
+            //ABs[ty][tx] = B[b + bStep + wB * ty + tx];
         }
         /*
         * Multiply the two matrices together;
