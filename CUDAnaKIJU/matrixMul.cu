@@ -26,7 +26,7 @@
  */
 #include <Constants.h>
 
-#define CONST_SIZE_OF_BLOCK 8
+#define CONST_SIZE_OF_BLOCK 32
 #define CONST_MATRIX_SIZE 1024
 
 /**
@@ -55,10 +55,10 @@ matrixMulCUDA(float* C, float* A, float* B, int wA, int wB)
     int aStep = BLOCK_SIZE;
 
     // Index of the first sub-matrix of B processed by the block
-    int bBegin = BLOCK_SIZE * bx;
+    int bBegin = wB * BLOCK_SIZE * bx;
 
     // Step size used to iterate through the sub-matrices of B
-    int bStep = BLOCK_SIZE * wB;
+    int bStep = BLOCK_SIZE;
 
     // Csub is used to store the element of the block sub-matrix
     // that is computed by the thread
@@ -85,6 +85,7 @@ matrixMulCUDA(float* C, float* A, float* B, int wA, int wB)
     * Loop over all the sub-matrices of A and B
     * required to compute the block sub-matrix
     */
+    __syncthreads();
     // (CHYBA!) trzeba zacz¹æ od kolejnego bloku, bo A wczeœniej ju¿ pobra³o sobie pierwszy??
     for (int a = aBegin, b = bBegin;
          a <= aEnd;
@@ -108,11 +109,6 @@ matrixMulCUDA(float* C, float* A, float* B, int wA, int wB)
         BBs = (float(*)[BLOCK_SIZE])&ABs[ty][tx];
 
         //printf("ABS: %f BBS: %f\n", ABs[ty][tx], BBs[ty][tx]);
-
-        __shared__ float AAs[BLOCK_SIZE][BLOCK_SIZE];
-        __shared__ float ABs[BLOCK_SIZE][BLOCK_SIZE];
-
-
         /*
         * Load the matrices from device memory
         * to shared memory; each thread loads
@@ -122,17 +118,20 @@ matrixMulCUDA(float* C, float* A, float* B, int wA, int wB)
         /*
         * Synchronize to make sure the matrices are loaded
         */
-        __syncthreads();
+        __shared__ float AAs[BLOCK_SIZE][BLOCK_SIZE];
+        __shared__ float ABs[BLOCK_SIZE][BLOCK_SIZE];
 
         // Pobranie kolejnego bloku danych z pamiêci globalnej do A
         if (a != aEnd) {
-            AAs[ty][tx] = A[aBegin + wA * ty + tx];
-            ABs[ty][tx] = B[bBegin + wB * ty + tx];
+            AAs[ty][tx] = A[aBegin + aStep + wA * ty + tx];
+            ABs[ty][tx] = B[bBegin + aStep + wB * ty + tx];
             //AAs = (float(*)[BLOCK_SIZE]) &(A[aBegin + aStep + wA * ty + tx]);
             //ABs = (float(*)[BLOCK_SIZE]) &(B[bBegin + bStep + wB * ty + tx]);
             //AAs[ty][tx] = A[a + aStep + wA * ty + tx];
             //ABs[ty][tx] = B[b + bStep + wB * ty + tx];
         }
+
+
         /*
         * Multiply the two matrices together;
         * each thread computes one element
@@ -145,6 +144,7 @@ matrixMulCUDA(float* C, float* A, float* B, int wA, int wB)
             // Obliczenia, ale tym razem na B
             Csub += (*BAs)[k] * (*BBs)[k];
         }
+
 
         /*
         * Synchronize to make sure that the preceding
@@ -162,6 +162,15 @@ matrixMulCUDA(float* C, float* A, float* B, int wA, int wB)
     C[c + wB * ty + tx] = Csub;
 }
 
+void transpose(float* matrix)
+{
+    for (int i = 0; i < CONST_MATRIX_SIZE; i++)
+        for (int j = i + 1; j < CONST_MATRIX_SIZE; j++) {
+            float temp = matrix[i * CONST_MATRIX_SIZE + j];
+            matrix[i * CONST_MATRIX_SIZE + j] = matrix[j * CONST_MATRIX_SIZE + i];
+            matrix[j * CONST_MATRIX_SIZE + i] = temp;
+        }
+}
 
 /**
  * Run a simple test of matrix multiplication using CUDA
@@ -180,6 +189,8 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
     const float valB = 0.01f;
     constantInit(h_A, size_A, 1.0f);
     constantInit(h_B, size_B, valB);
+    transpose(h_B);
+
 
     // Allocate device memory
     float *d_A, *d_B, *d_C;
@@ -220,6 +231,7 @@ int matrixMultiply(int argc, char **argv, int block_size, dim3 &dimsA, dim3 &dim
 
     // Create and start timer
     printf("Computing result using CUDA Kernel...\n");
+
 
     // Performs warmup operation using matrixMul CUDA kernel
     if (block_size == 16)
@@ -372,3 +384,5 @@ int main(int argc, char **argv)
 
     exit(matrix_result);
 }
+
+
